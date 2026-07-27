@@ -1,0 +1,324 @@
+import { useState, useEffect, useRef } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { ArrowLeft, MapPin, CalendarDays, Building2, FileText, Loader2, Save } from 'lucide-react'
+import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore'
+import { db } from '@/firebase/services'
+import { getDisplayId, generateComplaintId } from '@/firebase/complaintId'
+import { createNotification } from '@/firebase/notifications'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import toast from 'react-hot-toast'
+
+const statusVariant = {
+  Resolved: 'success',
+  'In Progress': 'warning',
+  Pending: 'destructive',
+}
+
+const nextStatus = {
+  Pending: 'In Progress',
+  'In Progress': 'Resolved',
+  Resolved: null,
+}
+
+const departments = ['Roads', 'Sanitation', 'Electricity', 'Water', 'Public Safety']
+
+export function AdminComplaintDetailsPage() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [complaint, setComplaint] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+  const [citizen, setCitizen] = useState(null)
+  const [department, setDepartment] = useState('')
+  const [resolutionNotes, setResolutionNotes] = useState('')
+  const [saving, setSaving] = useState(false)
+  const backfilledRef = useRef(false)
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, 'issues', id),
+      (snap) => {
+        if (snap.exists()) {
+          const data = { id: snap.id, ...snap.data() }
+          if (!data.complaintId && !backfilledRef.current) {
+            backfilledRef.current = true
+            generateComplaintId().then((cid) => {
+              updateDoc(doc(db, 'issues', id), { complaintId: cid })
+            }).catch(console.error)
+          }
+          setComplaint(data)
+          setDepartment(data.department || '')
+          setResolutionNotes(data.resolutionNotes || '')
+          setLoading(false)
+          if (data.reportedBy) {
+            getDoc(doc(db, 'users', data.reportedBy)).then((userSnap) => {
+              setCitizen(userSnap.exists() ? userSnap.data() : { name: 'Unknown User', email: null })
+            }).catch(() => {
+              setCitizen({ name: 'Unknown User', email: null })
+            })
+          }
+        } else {
+          setNotFound(true)
+          setLoading(false)
+        }
+      },
+      (err) => {
+        console.error('AdminComplaintDetails Firestore error:', err)
+        setNotFound(true)
+        setLoading(false)
+      }
+    )
+    return unsub
+  }, [id])
+
+  const handleStatusUpdate = async () => {
+    const next = nextStatus[complaint.status]
+    if (!next) return
+    setSaving(true)
+    try {
+      await updateDoc(doc(db, 'issues', id), {
+        status: next,
+        updatedAt: serverTimestamp(),
+      })
+      if (complaint.reportedBy) {
+        await createNotification({
+          recipientUid: complaint.reportedBy,
+          recipientRole: 'citizen',
+          senderUid: '',
+          issueId: complaint.complaintId || complaint.id,
+          type: 'status_update',
+          title: 'Complaint Status Updated',
+          message: next === 'Resolved' ? 'Your complaint has been Resolved.' : 'Your complaint is now In Progress.',
+        })
+      }
+      toast.success(`Status updated to "${next}"`)
+    } catch (err) {
+      toast.error('Failed to update status')
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDepartmentChange = async (val) => {
+    setDepartment(val)
+    setSaving(true)
+    try {
+      await updateDoc(doc(db, 'issues', id), {
+        department: val,
+        updatedAt: serverTimestamp(),
+      })
+      toast.success(`Department assigned: ${val}`)
+    } catch (err) {
+      toast.error('Failed to assign department')
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSaveNotes = async () => {
+    setSaving(true)
+    try {
+      await updateDoc(doc(db, 'issues', id), {
+        resolutionNotes,
+        updatedAt: serverTimestamp(),
+      })
+      toast.success('Resolution notes saved')
+    } catch (err) {
+      toast.error('Failed to save resolution notes')
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (notFound || !complaint) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <p className="text-lg font-semibold text-gray-900 dark:text-white">Complaint not found</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">This complaint does not exist or has been removed.</p>
+        <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate('/admin/reports')}>
+          Back to Reports
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate('/admin/reports')}
+        className="gap-2 mb-6 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to Reports
+      </Button>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-mono text-primary-600 dark:text-primary-400 font-semibold">{getDisplayId(complaint)}</span>
+                    <Badge variant={statusVariant[complaint.status] || 'default'} className="capitalize">
+                      {complaint.status}
+                    </Badge>
+                  </div>
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-white mt-1">{complaint.title}</h1>
+                </div>
+                {nextStatus[complaint.status] && (
+                  <Button
+                    onClick={handleStatusUpdate}
+                    disabled={saving}
+                    size="sm"
+                    className="gap-2 shrink-0"
+                  >
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Mark {nextStatus[complaint.status]}
+                  </Button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-gray-100 dark:border-gray-800">
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Category</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">{complaint.category || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Department</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">{complaint.department || 'Not assigned'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Created</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
+                    {complaint.createdAt?.toDate?.().toLocaleDateString() || '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Updated</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
+                    {complaint.updatedAt?.toDate?.().toLocaleDateString() || '-'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Description</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{complaint.description}</p>
+              </div>
+
+              <div className="mt-4 flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>{complaint.address}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                Assign Department
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="max-w-xs">
+                <Select value={department} onValueChange={handleDepartmentChange} disabled={saving}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                Resolution Notes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <textarea
+                value={resolutionNotes}
+                onChange={(e) => setResolutionNotes(e.target.value)}
+                placeholder="Enter resolution notes..."
+                rows={5}
+                className="flex w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500 mb-4"
+              />
+              <Button onClick={handleSaveNotes} disabled={saving} size="sm" className="gap-2">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Save Notes
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                Citizen Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Name</p>
+                <p className="font-medium text-gray-900 dark:text-white">{citizen?.name || 'Unknown User'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
+                <p className="font-medium text-gray-900 dark:text-white">{citizen?.email || '-'}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MapPin className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                Location
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg bg-gray-100 dark:bg-gray-800 h-48 flex items-center justify-center overflow-hidden">
+                <div className="text-center">
+                  <MapPin className="h-8 w-8 text-primary-600 dark:text-primary-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{complaint.address}</p>
+                  {complaint.latitude && complaint.longitude && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      {complaint.latitude}, {complaint.longitude}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}

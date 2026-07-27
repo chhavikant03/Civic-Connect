@@ -1,0 +1,222 @@
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Flag, Search } from 'lucide-react'
+import { collection, query, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore'
+import { db } from '@/firebase/services'
+import { getDisplayId } from '@/firebase/complaintId'
+import { PageHeader } from '@/components/common/PageHeader'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+const statusVariant = {
+  Pending: 'destructive',
+  'In Progress': 'warning',
+  Resolved: 'success',
+}
+
+function formatDate(ts) {
+  if (!ts?.toDate) return ''
+  return ts.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+const allCategories = [
+  'Potholes & Road Damage',
+  'Streetlight Issues',
+  'Water Leakage',
+  'Garbage & Sanitation',
+  'Noise Pollution',
+  'Illegal Construction',
+  'Traffic Issues',
+  'Other',
+]
+
+const allDepartments = ['Roads', 'Sanitation', 'Electricity', 'Water', 'Public Safety']
+
+export function AdminReportsPage() {
+  const [complaints, setComplaints] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [departmentFilter, setDepartmentFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [userCache, setUserCache] = useState({})
+  const cacheRef = useRef({})
+  const navigate = useNavigate()
+
+  const fetchUsers = async (list) => {
+    const uids = [...new Set(list.map((c) => c.reportedBy).filter(Boolean))]
+    const cache = { ...cacheRef.current }
+    let changed = false
+    await Promise.all(
+      uids.map(async (uid) => {
+        if (cache[uid]) return
+        changed = true
+        try {
+          const snap = await getDoc(doc(db, 'users', uid))
+          cache[uid] = snap.exists()
+            ? snap.data()
+            : { name: 'Unknown User', email: null }
+        } catch {
+          cache[uid] = { name: 'Unknown User', email: null }
+        }
+      })
+    )
+    if (changed) {
+      cacheRef.current = cache
+      setUserCache({ ...cache })
+    }
+  }
+
+  useEffect(() => {
+    const q = query(collection(db, 'issues'), orderBy('createdAt', 'desc'))
+    const unsub = onSnapshot(
+      q,
+      async (snapshot) => {
+        const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        setComplaints(list)
+        setLoading(false)
+        fetchUsers(list)
+      },
+      (err) => {
+        console.error('AdminReports Firestore error:', err)
+        setLoading(false)
+      }
+    )
+    return unsub
+  }, [])
+
+  const filtered = complaints.filter((c) => {
+    if (statusFilter !== 'all') {
+      const val = statusFilter === 'in-progress' ? 'in progress' : statusFilter
+      if (c.status?.toLowerCase() !== val) return false
+    }
+    if (departmentFilter !== 'all' && c.department !== departmentFilter) return false
+    if (categoryFilter !== 'all' && c.category !== categoryFilter) return false
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      const user = userCache[c.reportedBy]
+      if (
+        !(c.complaintId || '').toLowerCase().includes(q) &&
+        !c.title?.toLowerCase().includes(q) &&
+        !c.category?.toLowerCase().includes(q) &&
+        !c.address?.toLowerCase().includes(q) &&
+        !(user?.name || '').toLowerCase().includes(q) &&
+        !(user?.email || '').toLowerCase().includes(q)
+      )
+        return false
+    }
+    return true
+  })
+
+  return (
+    <div>
+      <PageHeader
+        title="Manage Reports"
+        description="Review and manage all citizen reports"
+      />
+
+      <div className="flex flex-wrap gap-3 mb-6">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            className="pl-9"
+            placeholder="Search by ID, title, name, email, category, address..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="All Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="in-progress">In Progress</SelectItem>
+            <SelectItem value="resolved">Resolved</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="All Departments" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Departments</SelectItem>
+            {allDepartments.map((d) => (
+              <SelectItem key={d} value={d}>{d}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {allCategories.map((c) => (
+              <SelectItem key={c} value={c}>{c}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Flag className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              {searchQuery || statusFilter !== 'all' || departmentFilter !== 'all' || categoryFilter !== 'all'
+                ? 'No matching reports found'
+                : 'No reports found'}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Reports submitted by citizens will appear here.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((complaint) => {
+            const user = userCache[complaint.reportedBy]
+            return (
+              <Card
+                key={complaint.id}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => navigate(`/admin/reports/${complaint.id}`)}
+              >
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-mono text-primary-600 dark:text-primary-400 font-semibold mb-1">
+                        {getDisplayId(complaint)}
+                      </p>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                        {complaint.title}
+                      </h3>
+                    </div>
+                    <Badge variant={statusVariant[complaint.status] || 'default'} className="shrink-0 capitalize">
+                      {complaint.status}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p><span className="font-medium text-gray-700 dark:text-gray-300">Reported By:</span> {user?.name || 'Unknown User'}</p>
+                    <p><span className="font-medium text-gray-700 dark:text-gray-300">Department:</span> {complaint.department || 'Not assigned'}</p>
+                    <p><span className="font-medium text-gray-700 dark:text-gray-300">Category:</span> {complaint.category || '-'}</p>
+                    <p className="truncate"><span className="font-medium text-gray-700 dark:text-gray-300">Address:</span> {complaint.address}</p>
+                    <p><span className="font-medium text-gray-700 dark:text-gray-300">Date:</span> {formatDate(complaint.createdAt) || '-'}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
