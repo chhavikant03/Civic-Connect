@@ -14,7 +14,6 @@ import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
 import { AdminReportsPage } from '@/pages/admin/AdminReportsPage'
 import { AdminComplaintDetailsPage } from '@/pages/admin/AdminComplaintDetailsPage'
 import { AdminNotificationsPage } from '@/pages/admin/AdminNotificationsPage'
-import { AdminAnalyticsPage } from '@/pages/admin/AdminAnalyticsPage'
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
@@ -50,7 +49,6 @@ export function AppRoutes() {
         <Route path="/admin/reports" element={<AdminReportsPage />} />
         <Route path="/admin/reports/:id" element={<AdminComplaintDetailsPage />} />
         <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
-        <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
         <Route path="/admin/settings" element={<AdminSettingsPage />} />
       </Route>
 

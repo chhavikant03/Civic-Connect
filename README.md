@@ -160,33 +160,6 @@ updatedAt
 - Mobile responsive optimization
 - Dashboard charts and reports
 
----
-
-## Contributing
-
-1. Fork the repository.
-2. Create a new feature branch.
-
-```bash
-git checkout -b feature-name
-```
-
-3. Commit your changes.
-
-```bash
-git commit -m "Add new feature"
-```
-
-4. Push to your branch.
-
-```bash
-git push origin feature-name
-```
-
-5. Open a Pull Request.
-
----
-
 ## License
 
 This project is intended for educational and academic purposes.
