@@ -1,105 +1,146 @@
-<h1>🏙️ Civic-Connect<h1>
+# 🏙️ Civic-Connect
+### Empowering Communities Through Transparent Civic Engagement & Issue Resolution
 
-Empowering Communities Through Transparent Civic Engagement & Issue Resolution
+Civic-Connect is an open-source digital platform designed to bridge the gap between citizens and local municipal authorities. It enables residents to report non-emergency civic issues—such as potholes, broken streetlights, garbage accumulation, and water supply disruptions—and track their resolution transparently.
 
-Civic-Connect is an open-source digital platform designed to bridge the gap between citizens and local municipal authorities. It enables residents to report non-emergency civic issues—such as potholes, streetlight failures, garbage accumulation, and water supply disruptions—directly to local administration with real-time tracking.
+## 🌟 Key Features
 
-🌟 Key Features
+- 📌 **Issue Reporting** — Report civic issues with descriptions, location details, and visual evidence.
+- ⏱️ **Real-Time Tracking** — Monitor issue status from submission to resolution.
+- 📊 **Admin Dashboard** — Manage, categorize, prioritize, and resolve reported issues efficiently.
+- 📍 **Location-Based Reporting** — Support geo-tagged complaints for better identification of civic problems.
+- 📱 **Responsive UI** — Access the platform through a clean, mobile-friendly interface.
+- 🔐 **Secure Authentication** — Firebase Authentication for user registration and login.
+- ☁️ **Cloud Database** — Store and manage complaint data using Firebase Cloud Firestore.
 
-📌 Issue Reporting: Geo-tagged reporting with visual upload support.
+## 🛠️ Tech Stack
 
-⏱️ Real-Time Tracking: Transparent status updates from report submittal to resolution.
+| Technology | Purpose |
+|---|---|
+| React + Vite | Frontend development |
+| HTML5, CSS3, JavaScript | Web technologies |
+| Firebase Authentication | User authentication |
+| Cloud Firestore | Database and real-time updates |
+| Firebase Storage | Image and file storage |
+| Git & GitHub | Version control and collaboration |
 
-📊 Admin Dashboard: Categorized queue management and issue prioritization.
+## 🚀 Getting Started
 
-📱 Responsive UI: Clean, mobile-friendly interface for seamless reporting.
+Follow the steps below to run Civic-Connect locally.
 
-🛠️ Tech Stack
+### Prerequisites
 
-Frontend: HTML5, CSS3, JavaScript / React (Vite)
+Ensure you have the following installed:
 
-Backend & Database: Firebase (Authentication & Cloud Firestore)
+- [Node.js](https://nodejs.org/) — Version 16 or higher
+- [Git](https://git-scm.com/)
+- A Firebase configuration with the required permissions
 
-Version Control: Git & GitHub
+### 1. Fork the Repository
 
-🚀 Getting Started
+Click the **Fork** button at the top-right of the repository page to create your own copy.
 
-Follow these steps to set up Civic-Connect locally on your machine.
+### 2. Clone Your Fork
 
-Prerequisites
+Replace `YOUR-USERNAME` with your GitHub username.
 
-Node.js (v16.x or higher)
-
-Git
-
-Local Installation
-
-Fork the Repository
-
-Click the Fork button at the top right of this page.
-
-Clone your Fork
-
+```bash
 git clone https://github.com/YOUR-USERNAME/Civic-Connect.git
 cd Civic-Connect
+```
 
+### 3. Install Dependencies
 
-Install Dependencies
-
+```bash
 npm install
+```
 
+> **Note:** If the project is configured to generate `.env` from `.env.example`, verify that this step creates the file. Otherwise, copy `.env.example` to `.env` manually.
 
-(Running npm install automatically creates your local .env file from .env.example.)
+### 4. Configure Environment Variables
 
-Environment Setup
+Create or open the `.env` file in the project root and configure the following Firebase environment variables:
 
-Open the .env file created in your root directory. Replace the placeholder values with our active Dev Sandbox Firebase Keys:
-
-🔑 Where to find dev keys: Copy the credentials from our pinned GitHub Discussion.
-
+```env
 VITE_FIREBASE_API_KEY=your_sandbox_api_key
 VITE_FIREBASE_AUTH_DOMAIN=civicconnect-dev.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=civicconnect-dev
 VITE_FIREBASE_STORAGE_BUCKET=civicconnect-dev.firebasestorage.app
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
+```
 
+**Where to find the development credentials:**
 
-Run the Application
+Refer to the pinned GitHub Discussion for the authorized development sandbox configuration.
 
+> ⚠️ **Important:** Use only authorized development credentials. Never commit your `.env` file or private service-account credentials to GitHub. Firebase client configuration is not a substitute for properly configured Firebase Security Rules.
+
+### 5. Start the Development Server
+
+```bash
 npm run dev
+```
 
+Open the following URL in your browser:
 
-Open http://localhost:5173 in your browser to view the app.
+**http://localhost:5173**
 
-🤝 Contributing (Social Winter of Code 2026)
+You're all set! 🎉
 
-We welcome contributions from Social Winter of Code 2026 participants!
+## 🤝 Contributing
 
-Contribution Steps:
+We welcome contributions from participants of **Social Winter of Code 2026 (SWOC)** and the open-source community.
 
-Browse the open tasks under the Issues Tab.
+### Contribution Guidelines
 
-Comment on an issue to get assigned before writing code.
+1. **Explore Issues:** Browse the repository's Issues tab and identify a task that interests you.
+2. **Get Assigned:** Comment on the issue and wait for assignment before starting work.
+3. **Fork and Clone:** Fork the repository and clone your fork locally.
+4. **Create a Feature Branch:**
 
-Create a descriptive feature branch:
+   ```bash
+   git checkout -b feature/issue-description
+   ```
 
-git checkout -b feature/issue-description
+5. **Make Your Changes:** Follow the existing code style and project conventions.
+6. **Commit Your Changes:**
 
+   ```bash
+   git add .
+   git commit -m "feat: add status badge component to user dashboard"
+   ```
 
-Commit your changes with clear messages:
+7. **Push Your Branch:**
 
-git commit -m "feat: add status badge component to user dashboard"
+   ```bash
+   git push origin feature/issue-description
+   ```
 
+8. **Submit a Pull Request:** Open a PR from your feature branch to the repository's `main` branch. Reference the relevant issue and describe your changes clearly.
 
-Push to your fork and submit a Pull Request (PR) targeted to the main branch.
+### Commit Message Convention
 
-📄 License
+Use descriptive commit messages, preferably following the Conventional Commits format:
 
-Distributed under the MIT License.
+- `feat:` — New features
+- `fix:` — Bug fixes
+- `docs:` — Documentation updates
+- `refactor:` — Code improvements
+- `test:` — Test-related changes
 
-👨‍💻 Project Admin
+## 📄 License
 
-Chhavikant
+This project is distributed under the **MIT License**. See the `LICENSE` file for details.
 
-GitHub: @chhavikant03
+## 👨‍💻 Project Admin
+
+**Chhavikant**
+
+- GitHub: [@chhavikant03](https://github.com/chhavikant03)
+
+---
+
+⭐ If you find Civic-Connect useful, consider starring the repository and contributing to its development.
+
+**Together, let's build cleaner, safer, and more connected communities!** 🏙️
