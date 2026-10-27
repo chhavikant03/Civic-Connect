@@ -27,7 +27,6 @@ const adminLinks = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: Shield },
   { to: '/admin/reports', label: 'Manage Reports', icon: Flag },
   { to: '/admin/notifications', label: 'Notifications', icon: Bell },
-  { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 
