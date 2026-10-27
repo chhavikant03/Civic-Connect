@@ -1,4 +1,4 @@
-🏙️ Civic-Connect
+<h1>🏙️ Civic-Connect<h1>
 
 Empowering Communities Through Transparent Civic Engagement & Issue Resolution
 
