@@ -90,7 +90,7 @@ You're all set! 🎉
 
 ## 🤝 Contributing
 
-We welcome contributions from participants of **Social Winter of Code 2026 (SWOC)** and the open-source community.
+We welcome contributions from participants of **Winter of Code Social 2026 (WOCS)** and the open-source community.
 
 ### Contribution Guidelines
 
