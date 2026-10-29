@@ -70,9 +70,9 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 ```
 
-**Where to find the development credentials:**
+**WHERE TO FIND THE DEVELOPMENT CREDENTIALS**
 
-Refer to the pinned GitHub Discussion for the authorized development sandbox configuration.
+Refer to the PINNED GITHUB DISCUSSION for the authorized development sandbox configuration.
 
 > ⚠️ **Important:** Use only authorized development credentials. Never commit your `.env` file or private service-account credentials to GitHub. Firebase client configuration is not a substitute for properly configured Firebase Security Rules.
 
@@ -88,13 +88,18 @@ Open the following URL in your browser:
 
 You're all set! 🎉
 
+## RUNNING THE PROJECT 
+
+1. ADMIN LOGIN IS ALREADY THERE . 
+2. FOR THE CITIZEN , FIRST SIGNUP TO CREATE YOUR TEST ACCOUNT AND THEN YOU CAN USE THAT SAME ACCOUNT YOU CREATED UNDER SIGNIN TAB. 
+
 ## 🤝 Contributing
 
 We welcome contributions from participants of **Winter of Code Social 2026 (WOCS)** and the open-source community.
 
 ### Contribution Guidelines
 
-1. **Explore Issues:** Browse the repository's Issues tab and identify a task that interests you.
+1. **Explore Issues:** Browse the repository's Issues tab and by running your cloned repo on local host.
 2. **Get Assigned:** Comment on the issue and wait for assignment before starting work.
 3. **Fork and Clone:** Fork the repository and clone your fork locally.
 4. **Create a Feature Branch:**
@@ -125,20 +130,16 @@ Use descriptive commit messages, preferably following the Conventional Commits f
 
 - `feat:` — New features
 - `fix:` — Bug fixes
-- `docs:` — Documentation updates
 - `refactor:` — Code improvements
 - `test:` — Test-related changes
 
-## 📄 License
-
-This project is distributed under the **MIT License**. See the `LICENSE` file for details.
 
 ## 👨‍💻 Project Admin
 
-**Chhavikant**
+**Chhavi kant**
 
 - GitHub: [@chhavikant03](https://github.com/chhavikant03)
-
+- Linkedin : [Chhavi Kant](https://www.linkedin.com/in/chhavi-kant-959bb1306/)
 ---
 
 ⭐ If you find Civic-Connect useful, consider starring the repository and contributing to its development.
