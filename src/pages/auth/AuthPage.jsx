@@ -95,7 +95,11 @@ export function AuthPage() {
             <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-1 mb-4">
               <button
                 type="button"
-                onClick={() => setRole('citizen')}
+                onClick={() => {
+                  setRole('citizen');
+                  setEmail('');
+                  setPassword('');
+                }}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                   role === 'citizen'
                     ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
@@ -106,7 +110,12 @@ export function AuthPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setRole('admin'); setMode('signin') }}
+                onClick={() => { 
+                  setRole('admin'); 
+                  setMode('signin');
+                  setEmail('admin@civicconnect.dev');
+                  setPassword('AdminDev123!');
+                }}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                   role === 'admin'
                     ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
