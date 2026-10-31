@@ -1,109 +1,181 @@
 # 🤝 Contributing to Civic-Connect
 
-Thank you for your interest in contributing to **Civic-Connect**! We are excited to welcome open-source contributors for **Winter of Code (WOCS)**. 
+Thank you for your interest in contributing to **Civic Connect**! We are excited to welcome open-source contributors participating in **Winter of Code Social (WOCS)**.
 
-Please take a moment to review these guidelines to make the contribution process smooth for everyone.
+Please take a moment to review these guidelines to ensure a smooth and collaborative contribution process.
 
 ---
 
 ## 💻 Getting Started & Local Setup
 
-### Step-by-Step Local Setup
+Follow these steps to set up Civic-Connect on your local machine.
 
-1. **Fork the Repository:**  
-   Click **Fork** at the top right of the [Civic-Connect Repository](https://github.com/chhavikant03/Civic-Connect).
+### Step 1: Fork the Repository
 
-2. **Clone Your Fork:**
-   ```bash
-   git clone [https://github.com/YOUR-USERNAME/Civic-Connect.git](https://github.com/YOUR-USERNAME/Civic-Connect.git)
-   cd Civic-Connect
-   
-1. Install Dependencies:
+Click the **Fork** button at the top-right corner of the [Civic-Connect Repository](https://github.com/chhavikant03/Civic-Connect).
 
-Bash
+### Step 2: Clone Your Fork
+
+Replace `YOUR-USERNAME` with your GitHub username.
+
+```bash
+git clone https://github.com/YOUR-USERNAME/Civic-Connect.git
+cd Civic-Connect
+```
+
+### Step 3: Install Dependencies
+
+Install the required project dependencies:
+
+```bash
 npm install
+```
 
-2. Configure Environment Variables:
+### Step 4: Configure Environment Variables
 
-Create a .env file in the project root:
+Create a `.env` file in the root directory of the project and add the following Firebase configuration:
 
-Code snippet
+```env
 VITE_FIREBASE_API_KEY=your_sandbox_api_key
 VITE_FIREBASE_AUTH_DOMAIN=civicconnect-dev.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=civicconnect-dev
 VITE_FIREBASE_STORAGE_BUCKET=civicconnect-dev.firebasestorage.app
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
-(Authorized development credentials can be retrieved from the pinned GitHub Discussions tab).
+```
 
-3. Start Development Server:
+**Where to find the credentials?**
 
-Bash
+Authorized development credentials are available in the pinned discussions under the repository's **GitHub Discussions** tab.
+
+> ⚠️ Do not commit your `.env` file or private credentials to your fork or pull requests.
+
+### Step 5: Start the Development Server
+
+Run the following command:
+
+```bash
 npm run dev
-Open http://localhost:5173 in your browser.
+```
 
-📌 Issue Claiming & Assigning
-To avoid duplicate work and keep issue tracking transparent:
+Open [http://localhost:5173](http://localhost:5173) in your browser to access the application.
 
-Browse open issues on the Issues Tab.
+---
 
-Comment on the issue you wish to work on expressing your interest.
+## 📌 Issue Claiming & Assignment
 
-Wait to be assigned: Do not begin working or submit a PR until a Project Admin assigns the issue to you.
+To maintain transparency and avoid duplicate efforts, please follow our issue assignment process:
 
-Inactivity: If there is no progress or update on an assigned issue for 3 days, it may be reassigned to another contributor.
+1. **Browse Issues:** Explore the open issues under the repository's Issues tab.
+2. **Express Interest:** Comment on the issue you wish to work on, explaining your interest.
+3. **Wait for Assignment:** Do not begin implementation or submit a pull request until a Project Admin has officially assigned the issue to you.
+4. **Stay Active:** If an assigned issue receives no progress update for 3 days, it may be reassigned to another contributor.
 
-🌿 Contribution Workflow
-Once an issue is assigned to you:
+---
 
-Sync Main Branch:
+## 🌿 Contribution Workflow
 
-Bash
+Once an issue has been assigned to you, follow these steps:
+
+### 1. Sync Your Main Branch
+
+Make sure your local repository is up to date:
+
+```bash
 git checkout main
 git pull origin main
-Create a Feature Branch:
+```
 
-Bash
+### 2. Create a Feature Branch
+
+Create a separate branch for your contribution.
+
+For new features:
+
+```bash
 git checkout -b feature/issue-title
-# or for bug fixes
+```
+
+For bug fixes:
+
+```bash
 git checkout -b fix/issue-title
-Develop & Test: Implement your changes locally and test functionality.
+```
 
-📝 Commit Message Conventions
-We follow the Conventional Commits standard for clear commit history:
+### 3. Develop & Test
 
-feat: A new feature (e.g., feat: add geo-location filter to complaint map)
+- Implement the assigned changes.
+- Follow the existing project structure and coding conventions.
+- Test your changes locally.
+- Ensure that your changes do not break existing functionality.
 
-fix: A bug fix (e.g., fix: resolve auth redirect loop on mobile)
+---
 
-docs: Documentation changes (e.g., docs: update environment setup in README)
+## 📝 Commit Message Conventions
 
-refactor: Code changes that neither fix a bug nor add a feature
+We follow the **Conventional Commits** standard to maintain a clean and understandable commit history.
 
-style: Formatting changes (white-space, formatting, missing semi-colons)
+| Prefix | Description | Example |
+|---|---|---|
+| `feat:` | Introduces a new feature | `feat: add geo-location filter` |
+| `fix:` | Fixes a bug | `fix: resolve auth redirect loop` |
+| `docs:` | Updates documentation | `docs: update environment setup` |
+| `refactor:` | Improves code without changing functionality | `refactor: simplify complaint filtering` |
+| `style:` | Makes formatting or styling changes | `style: improve dashboard spacing` |
 
-Example:
+**Example commit:**
 
-Bash
+```bash
+git add .
 git commit -m "feat: implement real-time status update badge for complaints"
-🔀 Pull Request (PR) Guidelines
-Push your feature branch to your GitHub fork:
+```
 
-Bash
+---
+
+## 🔀 Pull Request (PR) Guidelines
+
+Once your changes are complete and tested:
+
+### 1. Push Your Feature Branch
+
+Push your branch to your GitHub fork:
+
+```bash
 git push origin feature/issue-title
-Navigate to the main repository and open a Pull Request.
+```
 
-Fill out the PR template clearly:
+### 2. Open a Pull Request
 
-Link the relevant issue (e.g., Closes #12).
+Navigate to the original [Civic-Connect Repository](https://github.com/chhavikant03/Civic-Connect) and create a Pull Request targeting the `main` branch.
 
-Provide a brief summary of changes.
+### 3. Complete the PR Description
 
-💬 Getting Support
-Need help or have questions?
+Make sure your Pull Request includes:
 
-Discord: Join the Code Social Discord Server and ask questions in our dedicated Civic-Connect project forum under #find-a-project.
+- **Issue Reference:** Link the assigned issue (e.g., `Closes #12`).
+- **Summary:** Provide a brief explanation of the changes made.
+- **Testing:** Mention the tests performed and their results.
+- **Screenshots:** Include screenshots wherever applicable to demonstrate UI changes.
 
-GitHub Discussions: Use the repository's Discussions tab for broader feature ideas.
+### 4. Wait for Review
 
-Thank you for contributing to Civic-Connect! Happy Coding! 🚀
+The Project Admin will review your Pull Request and may request changes before approving and merging it.
+
+---
+
+## 💬 Getting Support
+
+Need help or have questions? We're happy to help!
+
+- **Discord:** Join the Code Social Discord Server and ask questions in the dedicated Civic-Connect project forum under `#find-a-project`.
+- **GitHub Discussions:** Use the repository's Discussions tab for questions, suggestions, and broader feature discussions.
+
+---
+
+## 🎉 Thank You for Contributing!
+
+Every contribution, whether it's a bug fix, a new feature, documentation improvement, or UI enhancement, helps make Civic-Connect better.
+
+We appreciate your time and effort in building a more transparent and connected civic ecosystem.
+
+**Happy Coding! 🚀**
