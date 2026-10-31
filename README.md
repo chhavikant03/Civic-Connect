@@ -1,12 +1,13 @@
 # 🏙️ Civic-Connect
 ### Empowering Communities Through Transparent Civic Engagement & Issue Resolution
 
+                           -[Explore Civic Connect Here](https://civic-connect-enim.vercel.app/)
+
 Civic-Connect is an open-source digital platform designed to bridge the gap between citizens and local municipal authorities. It enables residents to report non-emergency civic issues—such as potholes, broken streetlights, garbage accumulation, and water supply disruptions—and track their resolution transparently.
 
 ## 🌟 Key Features
 
-- 📌 **Issue Reporting** — Report civic issues with descriptions, location details, and visual evidence.
-- ⏱️ **Real-Time Tracking** — Monitor issue status from submission to resolution.
+- 📌 **Issue Reporting** — Report civic issues with descriptions, location details.
 - 📊 **Admin Dashboard** — Manage, categorize, prioritize, and resolve reported issues efficiently.
 - 📍 **Location-Based Reporting** — Support geo-tagged complaints for better identification of civic problems.
 - 📱 **Responsive UI** — Access the platform through a clean, mobile-friendly interface.
@@ -35,6 +36,7 @@ Ensure you have the following installed:
 - [Node.js](https://nodejs.org/) — Version 16 or higher
 - [Git](https://git-scm.com/)
 - A Firebase configuration with the required permissions
+- Visual Studio Code 
 
 ### 1. Fork the Repository
 
@@ -72,7 +74,7 @@ VITE_FIREBASE_APP_ID=your_app_id
 
 **WHERE TO FIND THE DEVELOPMENT CREDENTIALS**
 
-Refer to the PINNED GITHUB DISCUSSION for the authorized development sandbox configuration.
+Refer to the **PINNED GITHUB DISCUSSION** for the authorized development sandbox configuration.
 
 > ⚠️ **Important:** Use only authorized development credentials. Never commit your `.env` file or private service-account credentials to GitHub. Firebase client configuration is not a substitute for properly configured Firebase Security Rules.
 
