@@ -1,7 +1,7 @@
 # 🏙️ Civic-Connect
 ### Empowering Communities Through Transparent Civic Engagement & Issue Resolution
 
-                           -[Explore Civic Connect Here](https://civic-connect-enim.vercel.app/)
+                        🌐 **Live Demo:** [Explore Civic Connect Here](https://civic-connect-enim.vercel.app/)
 
 Civic-Connect is an open-source digital platform designed to bridge the gap between citizens and local municipal authorities. It enables residents to report non-emergency civic issues—such as potholes, broken streetlights, garbage accumulation, and water supply disruptions—and track their resolution transparently.
 
