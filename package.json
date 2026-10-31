@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "postinstall": "node -e \"if (!require('fs').existsSync('.env')) require('fs').copyFileSync('.env.example', '.env')\""
+    "postinstall": "node -e \"const fs = require('fs'); if (fs.existsSync('.env.example') && !fs.existsSync('.env')) fs.copyFileSync('.env.example', '.env');\""
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.2.4",
