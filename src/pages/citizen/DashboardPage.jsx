@@ -1,13 +1,22 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { AlertTriangle, CheckCircle, Clock, Flag, Plus, FileWarning } from 'lucide-react'
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
+import { AlertTriangle, CheckCircle, Clock, Flag, Plus, FileWarning, Trash2 } from 'lucide-react'
+import { collection, query, where, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore'
 import { db } from '@/firebase/services'
 import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import toast from 'react-hot-toast'
 
 const statusVariant = {
   Resolved: 'success',
@@ -27,6 +36,7 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const [complaints, setComplaints] = useState([])
   const [loading, setLoading] = useState(true)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => {
     if (!user) {
@@ -56,6 +66,17 @@ export function DashboardPage() {
     )
     return unsubscribe
   }, [user, user.uid])
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteDoc(doc(db, 'issues', deleteTarget.id))
+      toast.success('Complaint deleted successfully')
+    } catch {
+      toast.error('Failed to delete complaint')
+    }
+    setDeleteTarget(null)
+  }
 
   const total = complaints.length
   const pending = complaints.filter((c) => c.status === 'Pending').length
@@ -135,15 +156,43 @@ export function DashboardPage() {
                       {report.createdAt?.toDate?.().toLocaleDateString() || ''}
                     </p>
                   </div>
-                  <Badge variant={statusVariant[report.status] || 'default'} className="capitalize">
-                    {report.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={statusVariant[report.status] || 'default'} className="capitalize">
+                      {report.status}
+                    </Badge>
+                    {report.status === 'Pending' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        onClick={() => setDeleteTarget(report)}
+                        title="Delete Complaint"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Complaint</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this complaint? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
