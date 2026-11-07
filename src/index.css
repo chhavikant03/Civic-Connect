@@ -27,6 +27,7 @@
     from {
       translate: -100% 0;
     }
+
     to {
       translate: 100% 0;
     }
@@ -39,9 +40,11 @@
   * {
     @apply border-gray-200 dark:border-gray-800;
   }
+
   html {
     scroll-behavior: smooth;
   }
+
   body {
     @apply bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100;
     font-family: var(--font-sans);
@@ -60,4 +63,28 @@
 
 .dark {
   color-scheme: dark;
+}
+
+/* ThemeProvider adds this class to <html> for a moment when the theme changes,
+   so the whole page fades between light and dark instead of snapping. */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    fill 200ms ease,
+    stroke 200ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: none !important;
+  }
 }
