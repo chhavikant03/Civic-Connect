@@ -40,7 +40,7 @@ export default function CommunityFeed() {
   useEffect(() => {
     setLoading(true)
     const issuesRef = collection(db, 'issues')
-
+    
     // Live stream active issues
     const unsubscribe = onSnapshot(
       issuesRef,
@@ -195,19 +195,21 @@ export default function CommunityFeed() {
           <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-800">
             <button
               onClick={() => setSortBy('recent')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition ${sortBy === 'recent'
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
+                sortBy === 'recent'
                   ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-300'
                   : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
-                }`}
+              }`}
             >
               Recent
             </button>
             <button
               onClick={() => setSortBy('upvoted')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition ${sortBy === 'upvoted'
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
+                sortBy === 'upvoted'
                   ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-300'
                   : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
-                }`}
+              }`}
             >
               Most Upvoted
             </button>
@@ -244,10 +246,11 @@ export default function CommunityFeed() {
                   <div className="flex flex-col items-center">
                     <button
                       onClick={() => handleToggleUpvote(issue.id)}
-                      className={`flex flex-col items-center justify-center w-12 h-14 rounded-lg border transition ${hasUpvoted
+                      className={`flex flex-col items-center justify-center w-12 h-14 rounded-lg border transition ${
+                        hasUpvoted
                           ? 'bg-blue-50 border-blue-300 text-blue-600 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-400'
                           : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
-                        }`}
+                      }`}
                       title={hasUpvoted ? 'Remove upvote' : 'Upvote this issue'}
                     >
                       <ArrowBigUp
