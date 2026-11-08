@@ -11,6 +11,7 @@ import {
   Settings,
   Flag,
   HelpCircle,
+  Bot,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useAuth } from '@/hooks/useAuth'
@@ -22,6 +23,7 @@ const citizenLinks = [
   { to: '/notifications', label: 'Notifications', icon: Bell },
   { to: '/profile', label: 'Profile', icon: User },
   { to: '/help', label: 'Help & Support', icon: HelpCircle },
+  { to: '/assistant', label: 'Civic Assistant', icon: Bot },
 ]
 
 const adminLinks = [

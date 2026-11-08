@@ -14,6 +14,7 @@ const NotificationsPage = lazy(() => import('@/pages/citizen/NotificationsPage')
 const ProfilePage = lazy(() => import('@/pages/citizen/ProfilePage').then((m) => ({ default: m.ProfilePage })))
 const ComplaintDetailsPage = lazy(() => import('@/pages/citizen/ComplaintDetailsPage').then((m) => ({ default: m.ComplaintDetailsPage })))
 const HelpPage = lazy(() => import('@/pages/citizen/HelpPage').then((m) => ({ default: m.HelpPage })))
+const AssistantPage = lazy(() => import('@/pages/citizen/AssistantPage').then((m) => ({ default: m.AssistantPage })))
 
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })))
 const AdminReportsPage = lazy(() => import('@/pages/admin/AdminReportsPage').then((m) => ({ default: m.AdminReportsPage })))
@@ -45,6 +46,7 @@ export function AppRoutes() {
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/help" element={<HelpPage />} />
+          <Route path="/assistant" element={<AssistantPage />} />
         </Route>
 
         <Route
