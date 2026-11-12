@@ -13,7 +13,10 @@ export async function allocateComplaintId(transaction) {
   const snap = await transaction.get(ref)
   let nextNum = 1
   if (snap.exists()) {
-    nextNum = snap.data().lastNumber + 1
+    const rawNum = snap.data()?.lastNumber
+    nextNum = typeof rawNum === 'number' && Number.isFinite(rawNum) && rawNum > 0
+      ? Math.floor(rawNum) + 1
+      : 1
   }
   transaction.set(ref, { lastNumber: nextNum }, { merge: true })
   return formatId(nextNum)
