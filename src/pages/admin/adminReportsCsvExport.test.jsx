@@ -32,8 +32,10 @@ vi.mock('@/hooks/useAuth', () => ({
 }))
 vi.mock('react-hot-toast', () => ({ default: mocks.toast }))
 vi.mock('@/firebase/adminReportsQuery', () => ({
+  REPORTS_PAGE_SIZE: 15,
   subscribeToReportsPage: mocks.subscribeToReportsPage,
   fetchAllReportsForExport: mocks.fetchAllReportsForExport,
+  fetchAllReportsForSearch: vi.fn(async (...args) => (await mocks.fetchAllReportsForExport(...args))?.docs || []),
 }))
 vi.mock('@/utils/csv', () => ({
   toCsv: mocks.toCsv,
@@ -178,8 +180,8 @@ describe('AdminReportsPage - CSV export', () => {
 
     const [headers, rows] = mocks.toCsv.mock.calls[0]
 
-    expect(headers).toContain('Complaint ID')
-    expect(headers).toContain('Assigned Worker Phone')
+    expect(headers).toContain('Tracking ID')
+    expect(headers).toContain('Status')
     expect(rows).toHaveLength(3)
     expect(rows[0][0]).toBe('CMP-2026-0001')
     expect(mocks.downloadCsv).toHaveBeenCalledWith(
