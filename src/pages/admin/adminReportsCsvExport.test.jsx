@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => {
   return {
     subscribeToReportsPage: vi.fn(),
     fetchAllReportsForExport: vi.fn(),
+    fetchAllReportsForSearch: vi.fn(),
     toCsv: vi.fn(() => 'csv-content'),
     downloadCsv: vi.fn(),
     formatDateStamp: vi.fn(() => '2026-11-13'),
@@ -34,7 +35,7 @@ vi.mock('react-hot-toast', () => ({ default: mocks.toast }))
 vi.mock('@/firebase/adminReportsQuery', () => ({
   subscribeToReportsPage: mocks.subscribeToReportsPage,
   fetchAllReportsForExport: mocks.fetchAllReportsForExport,
-  fetchAllReportsForSearch: vi.fn().mockResolvedValue([]),
+  fetchAllReportsForSearch: mocks.fetchAllReportsForSearch,
   REPORTS_PAGE_SIZE: 10,
 }))
 vi.mock('@/utils/csv', () => ({
@@ -135,6 +136,7 @@ describe('AdminReportsPage - CSV export', () => {
       docs: EXPORT_DOCS,
       truncated: false,
     })
+    mocks.fetchAllReportsForSearch.mockResolvedValue(PAGE_DOCS)
     mocks.getDoc.mockResolvedValue({
       exists: () => false,
       data: () => ({}),
