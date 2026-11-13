@@ -156,11 +156,11 @@ export function ComplaintDetailsPage() {
 
     const loadComplaint = async () => {
       try {
-        const documentId = await resolveCitizenComplaintDocumentId(id)
+        const documentId = await resolveCitizenComplaintDocumentId(id, user?.uid)
         if (cancelled) return
 
         // Replace public tracking IDs with the actual Firestore document ID.
-        if (documentId !== id) {
+        if (documentId && documentId !== id) {
           navigate(`/complaints/${documentId}`, { replace: true })
           return
         }
