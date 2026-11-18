@@ -8,6 +8,7 @@ import { Toaster } from 'react-hot-toast'
 
 import OfflineBanner from '@/components/common/OfflineBanner'
 import OfflineSyncManager from '@/components/common/OfflineSyncManager'
+import MobileQuickBar from './components/citizen/MobileQuickBar'
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
               <OfflineSyncManager />
 
               <AppRoutes />
+              <MobileQuickBar />
 
               <Toaster
                 position="top-right"
