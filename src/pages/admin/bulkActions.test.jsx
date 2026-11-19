@@ -67,14 +67,44 @@ vi.mock('react-hot-toast', () => ({
   },
 }))
 
+vi.mock('@/firebase/dashboardStats', () => ({
+  DASHBOARD_WINDOW_SIZE: 200,
+  startDashboardAggregates: () => ({ refresh: vi.fn(), stop: vi.fn() }),
+}))
+
 vi.mock('firebase/firestore', () => ({
   collection: (_db, name) => name,
   query: (col) => col,
   orderBy: () => ({}),
+  limit: () => ({}),
   onSnapshot: (_q, callback) => {
     runtime.listeners.push(callback)
     return vi.fn()
   },
+}))
+
+vi.mock('@/contexts/LanguageContext', () => ({
+  useLanguage: () => ({
+    language: 'en',
+    setLanguage: vi.fn(),
+    t: (key) => {
+      const translations = {
+        bulkSelected: '{count} selected',
+        bulkMarkInProgress: 'Bulk mark In Progress',
+        bulkMarkResolved: 'Bulk mark Resolved',
+        bulkClearSelection: 'Clear selection',
+        bulkConfirmStatusUpdate: 'Confirm Bulk Status Update',
+        bulkAffectedComplaints: 'Affected Complaints ({count})',
+        bulkConfirmApply: 'Confirm & Apply',
+        bulkUpdateFailed: 'Failed to perform bulk update. Please try again.',
+        bulkStatusUpdated: 'Status updated to "{status}" for {count} report{plural}',
+        selectAllComplaints: 'Select all complaints',
+        selectComplaint: 'Select complaint {id}',
+      }
+
+      return translations[key] ?? key
+    },
+  }),
 }))
 
 function nodes(element) {

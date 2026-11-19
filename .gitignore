@@ -12,6 +12,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+functions/lib
 *.local
 
 # Editor directories and files
@@ -33,3 +34,8 @@ dist-ssr
 
 # Lighthouse CI reports
 .lighthouseci/
+
+# Firebase credentials and safe environment template
+serviceAccountKey.json
+!.env.example
+.npm-cache/

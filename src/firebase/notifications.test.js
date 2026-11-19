@@ -2,6 +2,8 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createNotification,
   addNotificationToBatch,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
   getPushPermissionStatus,
   requestPushPermission,
   showNativeNotification,
@@ -39,6 +41,13 @@ vi.mock('firebase/firestore', () => ({
     firestoreState.updates.push({ ref, data })
     firestoreState.docs[ref] = { ...(firestoreState.docs[ref] || {}), ...data }
   },
+  writeBatch: () => ({
+    update: (ref, data) => {
+      firestoreState.updates.push({ ref, data })
+      firestoreState.docs[ref] = { ...(firestoreState.docs[ref] || {}), ...data }
+    },
+    commit: async () => {},
+  }),
   serverTimestamp: () => 'mock-timestamp',
 }))
 
@@ -123,6 +132,39 @@ describe('notifications service', () => {
       expect(batchWrites[0].data.read).toBe(false)
       expect(batchWrites[0].data.issueId).toBe('CMP-100')
     })
+
+    it('marks a single notification as read or unread', async () => {
+      await markNotificationAsRead('notif-123', true)
+      expect(firestoreState.updates).toContainEqual({
+        ref: 'notifications/notif-123',
+        data: { read: true },
+      })
+
+      await markNotificationAsRead('notif-123', false)
+      expect(firestoreState.updates).toContainEqual({
+        ref: 'notifications/notif-123',
+        data: { read: false },
+      })
+    })
+
+    it('marks all notification IDs as read using batch update', async () => {
+      await markAllNotificationsAsRead(['notif-1', 'notif-2'])
+      expect(firestoreState.updates).toContainEqual({
+        ref: 'notifications/notif-1',
+        data: { read: true },
+      })
+      expect(firestoreState.updates).toContainEqual({
+        ref: 'notifications/notif-2',
+        data: { read: true },
+      })
+    })
+
+    it('handles empty or missing IDs safely in markAllNotificationsAsRead', async () => {
+      const prevLength = firestoreState.updates.length
+      await markAllNotificationsAsRead([])
+      await markAllNotificationsAsRead(null)
+      expect(firestoreState.updates).toHaveLength(prevLength)
+    })
   })
 
   describe('getPushPermissionStatus', () => {
@@ -171,6 +213,9 @@ describe('notifications service', () => {
 
     it('registers service worker, gets FCM token, and saves to users doc when granted', async () => {
       const registerMock = vi.fn().mockResolvedValue({ scope: '/' })
+      if (!globalThis.navigator) {
+        globalThis.navigator = {}
+      }
       Object.defineProperty(globalThis.navigator, 'serviceWorker', {
         value: { register: registerMock },
         configurable: true,

@@ -5,10 +5,15 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { SpotlightProvider } from '@/contexts/SpotlightContext'
 import { AppRoutes } from '@/routes/AppRoutes'
 import { Toaster } from 'react-hot-toast'
+import { LanguageProvider } from '@/contexts/LanguageContext'
+import KeyboardShortcutsModal from '@/components/common/KeyboardShortcutsModal'
+
 
 import OfflineBanner from '@/components/common/OfflineBanner'
 import OfflineSyncManager from '@/components/common/OfflineSyncManager'
 import MobileQuickBar from './components/citizen/MobileQuickBar'
+import AccessibilityBar from '@/components/common/AccessibilityBar'
+
 
 function App() {
   return (
@@ -36,10 +41,35 @@ function App() {
               />
             </SpotlightProvider>
           </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <SpotlightProvider>
+                <OfflineBanner />
+                <OfflineSyncManager />
+                <KeyboardShortcutsModal />
+                <AccessibilityBar />
+
+                <AppRoutes />
+
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    duration: 3000,
+                    style: {
+                      borderRadius: '12px',
+                      padding: '12px 16px',
+                      fontSize: '14px',
+                    },
+                  }}
+                />
+              </SpotlightProvider>
+            </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </BrowserRouter>
     </MotionConfig>
   )
 }
+
 
 export default App

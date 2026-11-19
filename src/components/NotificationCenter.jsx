@@ -1,25 +1,27 @@
 import { useState, useEffect } from 'react'
+import { resolveCitizenComplaintDocumentId } from '@/firebase/complaintReferences'
 import { useNavigate } from 'react-router-dom'
 import { BellRing, CheckCircle2, AlertCircle } from 'lucide-react'
-import { collection, query, where, onSnapshot, doc, writeBatch, getDocs, limit } from 'firebase/firestore'
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  writeBatch,
+} from 'firebase/firestore'
 import { db } from '@/firebase/services'
 import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { getPushPermissionStatus, requestPushPermission } from '@/firebase/notifications'
+import {
+  getPushPermissionStatus,
+  requestPushPermission,
+} from '@/firebase/notifications'
 import { EmptyState } from '@/components/common/EmptyState'
+import { formatRelativeTime } from '@/utils/relativeTime'
 import toast from 'react-hot-toast'
-
-function formatTime(ts) {
-  if (!ts?.toDate) return ''
-  const d = ts.toDate()
-  const now = new Date()
-  const diff = now - d
-  if (diff < 60000) return 'Just now'
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
+import { useLanguage } from '@/contexts/LanguageContext'
 
 function sortByCreatedDesc(list) {
   return [...list].sort((a, b) => {
@@ -28,6 +30,8 @@ function sortByCreatedDesc(list) {
     return tb - ta
   })
 }
+
+
 
 const icons = {
   new_complaint: '🔔',
@@ -39,10 +43,15 @@ const icons = {
 export function NotificationCenter({ className = '' }) {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { t, language } = useLanguage()
+
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
-  const [permissionStatus, setPermissionStatus] = useState(() => getPushPermissionStatus())
+  const [permissionStatus, setPermissionStatus] = useState(() =>
+    getPushPermissionStatus()
+  )
   const [requestingPush, setRequestingPush] = useState(false)
+
   const [dismissBanner, setDismissBanner] = useState(() => {
     try {
       return localStorage.getItem('civic_push_prompt_dismissed') === 'true'
@@ -53,16 +62,19 @@ export function NotificationCenter({ className = '' }) {
 
   const handleEnablePush = async () => {
     setRequestingPush(true)
+
     try {
       const res = await requestPushPermission(user?.uid)
       setPermissionStatus(res.status)
+
       if (res.status === 'granted') {
-        toast.success('Real-time push notifications enabled!')
+        toast.success(t('notificationPushEnabled'))
       } else if (res.status === 'denied') {
-        toast('Push notifications were not enabled. You will still receive in-app alerts.', { icon: 'ℹ️' })
+        toast(t('notificationPushNotEnabled'), { icon: 'ℹ️' })
       }
     } catch (err) {
       console.error('Error enabling push notifications:', err)
+      toast.error(t('notificationPushError'))
     } finally {
       setRequestingPush(false)
     }
@@ -70,6 +82,7 @@ export function NotificationCenter({ className = '' }) {
 
   const handleDismissBanner = () => {
     setDismissBanner(true)
+
     try {
       localStorage.setItem('civic_push_prompt_dismissed', 'true')
     } catch {
@@ -81,42 +94,59 @@ export function NotificationCenter({ className = '' }) {
     if (!n.issueId) return
 
     try {
-      const q = query(
-        collection(db, 'issues'),
-        where('complaintId', '==', n.issueId),
-        limit(1)
+      const documentId = await resolveCitizenComplaintDocumentId(
+        n.issueId,
+        user?.uid
       )
-      const snap = await getDocs(q)
-      if (!snap.empty) {
-        navigate(`/complaints/${snap.docs[0].id}`)
+
+      if (!documentId) {
+        toast.error(t('notificationComplaintNotFound'))
         return
       }
-      navigate(`/complaints/${n.issueId}`)
+
+      navigate(`/complaints/${documentId}`)
     } catch (err) {
       console.error('Error navigating to complaint:', err)
-      navigate(`/complaints/${n.issueId}`)
+      toast.error(t('notificationComplaintOpenError'))
     }
   }
 
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
     const q = query(
       collection(db, 'notifications'),
       where('recipientUid', '==', user.uid)
     )
+
     const unsub = onSnapshot(
       q,
       (snapshot) => {
-        const list = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+        const list = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        }))
+
         setNotifications(sortByCreatedDesc(list))
         setLoading(false)
+
         const unread = list.filter((n) => !n.read)
+
         if (unread.length > 0) {
           const batch = writeBatch(db)
+
           unread.forEach((n) => {
-            batch.update(doc(db, 'notifications', n.id), { read: true })
+            batch.update(doc(db, 'notifications', n.id), {
+              read: true,
+            })
           })
-          batch.commit().catch((err) => console.error('batch commit error:', err))
+
+          batch.commit().catch((err) =>
+            console.error('batch commit error:', err)
+          )
         }
       },
       (error) => {
@@ -124,6 +154,7 @@ export function NotificationCenter({ className = '' }) {
         setLoading(false)
       }
     )
+
     return unsub
   }, [user])
 
@@ -136,15 +167,18 @@ export function NotificationCenter({ className = '' }) {
               <div className="rounded-lg bg-primary-100 p-2 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 shrink-0">
                 <BellRing className="h-5 w-5" />
               </div>
+
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  Enable Browser Push Notifications
+                  {t('notificationEnableBrowserPush')}
                 </p>
+
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                  Get notified immediately when an administrator updates the status, assigns a department, or resolves your complaints.
+                  {t('notificationPushDescription')}
                 </p>
               </div>
             </div>
+
             <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
               <Button
                 size="sm"
@@ -152,15 +186,18 @@ export function NotificationCenter({ className = '' }) {
                 disabled={requestingPush}
                 className="h-8 text-xs"
               >
-                {requestingPush ? 'Enabling...' : 'Enable Notifications'}
+                {requestingPush
+                  ? t('notificationEnabling')
+                  : t('notificationEnable')}
               </Button>
+
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleDismissBanner}
                 className="h-8 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
-                Not now
+                {t('notificationNotNow')}
               </Button>
             </div>
           </CardContent>
@@ -170,9 +207,8 @@ export function NotificationCenter({ className = '' }) {
       {permissionStatus === 'denied' && (
         <div className="mb-6 flex items-center gap-2.5 rounded-lg border border-amber-200 bg-amber-50/50 px-3.5 py-2.5 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
           <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-          <span>
-            Browser push notifications are currently blocked. To receive native updates, enable permissions in your browser&apos;s site settings.
-          </span>
+
+          <span>{t('notificationPermissionBlocked')}</span>
         </div>
       )}
 
@@ -180,7 +216,7 @@ export function NotificationCenter({ className = '' }) {
         <div className="mb-6 flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/40 px-3.5 py-2 text-xs text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-            <span>Browser push notifications are active</span>
+            <span>{t('notificationPushActive')}</span>
           </div>
         </div>
       )}
@@ -194,8 +230,8 @@ export function NotificationCenter({ className = '' }) {
       ) : notifications.length === 0 ? (
         <EmptyState
           variant="notifications"
-          heading="You're All Caught Up!"
-          description="You don't have any notifications right now. We'll let you know when there are updates."
+          heading={t('notificationAllCaughtUp')}
+          description={t('notificationEmptyDescription')}
         />
       ) : (
         <div className="space-y-3">
@@ -209,19 +245,35 @@ export function NotificationCenter({ className = '' }) {
                   : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800'
               }`}
             >
-              <span className="text-xl shrink-0 mt-0.5">{icons[n.type] || '🔔'}</span>
+              <span className="text-xl shrink-0 mt-0.5">
+                {icons[n.type] || '🔔'}
+              </span>
+
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <p className={`text-sm font-medium ${!n.read ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                  <p
+                    className={`text-sm font-medium ${
+                      !n.read
+                        ? 'text-gray-900 dark:text-white'
+                        : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
                     {n.title}
                   </p>
+
                   <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 whitespace-nowrap">
-                    {formatTime(n.createdAt)}
+                    {formatRelativeTime(n.createdAt, language)}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{n.message}</p>
+
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {n.message}
+                </p>
+
                 {n.issueId && (
-                  <p className="text-xs font-mono text-primary-600 dark:text-primary-400 mt-1">{n.issueId}</p>
+                  <p className="text-xs font-mono text-primary-600 dark:text-primary-400 mt-1">
+                    {n.issueId}
+                  </p>
                 )}
               </div>
             </div>
@@ -231,5 +283,5 @@ export function NotificationCenter({ className = '' }) {
     </div>
   )
 }
-export default NotificationCenter
 
+export default NotificationCenter
