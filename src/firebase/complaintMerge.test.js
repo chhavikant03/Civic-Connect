@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { beforeEach, expect, it, vi } from 'vitest'
 import { createTransactionStore } from './testSupport/transactionStore'
-import { mergeComplaints } from './complaintMerge'
+import { mergeComplaints, unmergeComplaint, syncMergedClusterLifecycle } from './complaintMerge'
 
 const runtime = vi.hoisted(() => ({ store: null, counter: 0 }))
 vi.mock('./services', () => ({ db: {} }))
@@ -297,6 +297,139 @@ it('does not add duplicate reporter if child was reported by parent author', asy
   const updatedParent = runtime.store.read(parentPath)
   expect(updatedParent.mergedReporters).toEqual([])
 })
+
+it('automatically resolves to canonical root when merging into an already-merged complaint', async () => {
+  // Setup grandParent -> parent -> child
+  const grandParentPath = 'issues/grandparent-1'
+  runtime.store.write(grandParentPath, {
+    complaintId: 'CMP-2026-0000',
+    title: 'Root main burst',
+    status: 'In Progress',
+    reportedBy: 'citizen-root',
+    mergedChildIds: ['parent-1'],
+    endorsedBy: [],
+    createdAt: '2026-01-01',
+    updatedAt: 'old-time',
+  })
+
+  runtime.store.write(parentPath, {
+    ...parentFixture,
+    status: 'Merged - Duplicate',
+    mergedInto: 'CMP-2026-0000',
+    mergedIntoId: 'grandparent-1',
+  })
+
+  const res = await mergeComplaints({
+    childId: 'child-1',
+    parentId: 'parent-1',
+    actorUid: 'admin-1',
+    resolveToCanonicalRoot: true,
+  })
+
+  expect(res.success).toBe(true)
+  expect(res.canonicalRootId).toBe('grandparent-1')
+  expect(res.parentComplaintId).toBe('CMP-2026-0000')
+
+  // Child should be attached to grandParent directly
+  const updatedChild = runtime.store.read(childPath)
+  expect(updatedChild.mergedIntoId).toBe('grandparent-1')
+  expect(updatedChild.canonicalRootId).toBe('grandparent-1')
+
+  const updatedGrandParent = runtime.store.read(grandParentPath)
+  expect(updatedGrandParent.mergedChildIds).toContain('child-1')
+})
+
+it('enforces maximum tree depth limit <= 3', async () => {
+  // Build a chain that exceeds depth 3: L4 -> L3 -> L2 -> L1
+  runtime.store.write('issues/l1', {
+    status: 'In Progress',
+    mergedChildIds: [],
+    endorsedBy: [],
+  })
+  runtime.store.write('issues/l2', {
+    status: 'Merged - Duplicate',
+    mergedIntoId: 'l1',
+  })
+  runtime.store.write('issues/l3', {
+    status: 'Merged - Duplicate',
+    mergedIntoId: 'l2',
+  })
+  runtime.store.write('issues/l4', {
+    status: 'Pending',
+    mergeDepth: 2,
+  })
+
+  await expect(
+    mergeComplaints({
+      childId: 'l4',
+      parentId: 'l3',
+      resolveToCanonicalRoot: true,
+    })
+  ).rejects.toThrow('exceeds maximum allowed tree depth limit of 3')
+})
+
+it('unmerges a consolidated duplicate and restores its status with full audit logging and notification', async () => {
+  // First merge
+  await mergeComplaints({
+    childId: 'child-1',
+    parentId: 'parent-1',
+    actorUid: 'admin-1',
+  })
+
+  // Now unmerge
+  const unmergeRes = await unmergeComplaint({
+    childId: 'child-1',
+    parentId: 'parent-1',
+    actorUid: 'admin-1',
+    restoreStatus: 'In Progress',
+  })
+
+  expect(unmergeRes.success).toBe(true)
+  expect(unmergeRes.restoredStatus).toBe('In Progress')
+
+  // Verify child restored
+  const restoredChild = runtime.store.read(childPath)
+  expect(restoredChild.status).toBe('In Progress')
+  expect(restoredChild.mergedInto).toBeNull()
+  expect(restoredChild.mergedIntoId).toBeNull()
+  expect(restoredChild.unmergedBy).toBe('admin-1')
+
+  // Verify parent has child removed
+  const updatedParent = runtime.store.read(parentPath)
+  expect(updatedParent.mergedChildIds).not.toContain('child-1')
+  expect(updatedParent.mergedChildComplaintIds).not.toContain('CMP-2026-0002')
+
+  // Verify notification sent to child reporter
+  const notifs = runtime.store.history.filter(h => h.key.startsWith('notifications/'))
+  const unmergeNotif = notifs.find(n => n.data.title === 'Complaint Reactivated')
+  expect(unmergeNotif).toBeDefined()
+  expect(unmergeNotif.data.recipientUid).toBe('citizen-child')
+})
+
+it('synchronizes canonical status updates across all consolidated cluster children', async () => {
+  // Merge child into parent
+  await mergeComplaints({
+    childId: 'child-1',
+    parentId: 'parent-1',
+    actorUid: 'admin-1',
+  })
+
+  // Synchronize status transition to 'Resolved'
+  const syncRes = await syncMergedClusterLifecycle('parent-1', 'Resolved', 'admin-1')
+  expect(syncRes.success).toBe(true)
+  expect(syncRes.synchronizedCount).toBe(1)
+
+  const updatedChild = runtime.store.read(childPath)
+  expect(updatedChild.canonicalStatus).toBe('Resolved')
+
+  const childEvents = runtime.store.history
+    .filter(e => e.key.startsWith('issues/child-1/events/'))
+    .map(e => e.data)
+  const syncEvent = childEvents.find(e => e.action === 'Cluster lifecycle synchronized')
+  expect(syncEvent).toBeDefined()
+  expect(syncEvent.remarks).toContain('Resolved')
+})
+
 
 
 
