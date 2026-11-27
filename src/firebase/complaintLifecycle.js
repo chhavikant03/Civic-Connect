@@ -1020,3 +1020,5 @@ export async function recordSlaEscalation(
     }
   })
 }
+
+export { rerouteComplaintWard, resolveJurisdictionRouting } from './wardRouting'

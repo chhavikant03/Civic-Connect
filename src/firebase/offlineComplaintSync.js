@@ -7,8 +7,8 @@ import { allocateComplaintId } from './complaintId'
 import { addComplaintEventToBatch } from './complaintEvents'
 import { addNotificationToBatch } from './notifications'
 import { uploadComplaintPhoto, uploadComplaintAudio, deleteComplaintEvidence } from './storage'
-import { findWardForCoordinates } from '@/utils/geo'
 import { getWardById } from '@/utils/wardBoundaries'
+import { resolveJurisdictionRouting } from './wardRouting'
 
 export function normalizePhotoFile(complaint) {
   const photo = complaint?.photoFile || complaint?.photoBlob
@@ -158,19 +158,17 @@ export function syncOfflineComplaint(complaint, session, options = {}) {
         const complaintId = await allocateComplaintId(transaction)
         assertCurrentSession()
 
-        // Validate and resolve jurisdiction metadata
-        let resolvedWardId = null
-        let resolvedWardName = null
-        let resolvedZoneName = null
+        // Authoritatively validate and resolve jurisdiction routing
+        const jurisdiction = resolveJurisdictionRouting({
+          latitude: complaint.latitude,
+          longitude: complaint.longitude,
+          selectedZone: complaint.zoneName || complaint.selectedZone || null,
+          category: complaint.category,
+        })
 
-        if (complaint.latitude != null && complaint.longitude != null) {
-          const ward = findWardForCoordinates({ lat: complaint.latitude, lng: complaint.longitude })
-          if (ward) {
-            resolvedWardId = ward.wardId
-            resolvedWardName = ward.wardName
-            resolvedZoneName = ward.zoneName
-          }
-        }
+        let resolvedWardId = jurisdiction.wardId
+        let resolvedWardName = jurisdiction.wardName
+        let resolvedZoneName = jurisdiction.zoneName
 
         // If coordinates did not match a ward but a client-supplied wardId was provided, validate against known wards
         if (!resolvedWardId && complaint.wardId) {
@@ -207,6 +205,11 @@ export function syncOfflineComplaint(complaint, session, options = {}) {
           issueData.ward = resolvedWardId
           issueData.wardName = resolvedWardName
           issueData.zoneName = resolvedZoneName
+        }
+
+        issueData.jurisdictionMismatch = jurisdiction.jurisdictionMismatch
+        if (jurisdiction.auditRemark) {
+          issueData.jurisdictionAuditRemark = jurisdiction.auditRemark
         }
 
         transaction.set(issueRef, issueData)

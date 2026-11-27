@@ -42,6 +42,10 @@ service cloud.firestore {
       return value == null || value is map;
     }
 
+    function isOptionalBoolean(value) {
+      return value == null || value is bool;
+    }
+
     // ---------------------------------------------------------------------
     // User profiles (/users/{userId})
     // ---------------------------------------------------------------------
@@ -127,7 +131,8 @@ service cloud.firestore {
           'latitude', 'longitude', 'status', 'department', 'reportedBy',
           'imageUrl', 'photos', 'audioNote', 'endorsedBy', 'endorsementCount',
           'upvotedBy', 'upvotesCount', 'createdAt', 'updatedAt',
-          'wardId', 'ward', 'wardName', 'zoneName'
+          'wardId', 'ward', 'wardName', 'zoneName',
+          'jurisdictionMismatch', 'jurisdictionAuditRemark'
         ];
         // Workflow, assignment, audit and social fields may only be produced by
         // server-side/admin workflows. A reporter starts from a clean Pending doc.
@@ -149,6 +154,8 @@ service cloud.firestore {
                isOptionalString(data.get('ward', null), 50) &&
                isOptionalString(data.get('wardName', null), 100) &&
                isOptionalString(data.get('zoneName', null), 100) &&
+               isOptionalBoolean(data.get('jurisdictionMismatch', null)) &&
+               isOptionalString(data.get('jurisdictionAuditRemark', null), 500) &&
                (data.get('imageUrl', null) == null ||
                  (data.imageUrl is string && data.imageUrl.size() <= 2048)) &&
                (data.get('photos', []) is list && data.get('photos', []).size() <= 5) &&
@@ -187,6 +194,8 @@ service cloud.firestore {
                data.get('ward', null) == previous.get('ward', null) &&
                data.get('wardName', null) == previous.get('wardName', null) &&
                data.get('zoneName', null) == previous.get('zoneName', null) &&
+               data.get('jurisdictionMismatch', null) == previous.get('jurisdictionMismatch', null) &&
+               data.get('jurisdictionAuditRemark', null) == previous.get('jurisdictionAuditRemark', null) &&
                (!changed.hasAny(['title']) || isNonEmptyString(data.title, 200)) &&
                (!changed.hasAny(['description']) || isNonEmptyString(data.description, 2000)) &&
                (!changed.hasAny(['category']) || isNonEmptyString(data.category, 50)) &&
