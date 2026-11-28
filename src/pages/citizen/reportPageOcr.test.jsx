@@ -14,7 +14,7 @@ vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ user: { uid: 'citizen-1', name: 'Citizen' } }),
 }))
 
-vi.mock('@/firebase/services', () => ({ db: {} }))
+vi.mock('@/firebase/services', () => ({ db: {}, ensureAppCheckToken: vi.fn(async () => null) }))
 
 vi.mock('@/firebase/endorseComplaint', () => ({
   endorseComplaint: vi.fn(),
