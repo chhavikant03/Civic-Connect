@@ -22,8 +22,7 @@ const defaultSdk = {
 export function createAppCheck(app, env, sdk = defaultSdk) {
   if (env.VITE_USE_EMULATORS === 'true') return null
 
-  const useCustomProvider =
-    env.MODE === 'test' || env.VITE_APPCHECK_USE_CUSTOM_PROVIDER === 'true'
+  const useCustomProvider = env.VITE_APPCHECK_USE_CUSTOM_PROVIDER === 'true'
 
   if (useCustomProvider) {
     if (env.PROD) {
