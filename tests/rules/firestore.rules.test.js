@@ -69,6 +69,17 @@ function makeClientIssue(overrides = {}) {
   }
 }
 
+async function submitClientComplaint(db, userId, issueId, payload) {
+  const rateLimitRef = doc(db, 'reportRateLimits', userId)
+  const issueRef = doc(db, 'issues', issueId)
+
+  return runTransaction(db, async (transaction) => {
+    await transaction.get(rateLimitRef)
+    transaction.set(rateLimitRef, { lastSubmittedAt: serverTimestamp() })
+    transaction.set(issueRef, payload)
+  })
+}
+
 function issue(overrides = {}) {
   return makeIssue(overrides)
 }
@@ -398,9 +409,39 @@ describe('Firestore Security Rules (Issue #20 Hardening)', () => {
   // 3. Complaint Lifecycle & Ownership (/issues/{issueId})
   // -------------------------------------------------------------------------
   describe('Complaint Lifecycle & Access Control', () => {
+    it('requires an atomic report limiter write and enforces the 60-second window', async () => {
+      const db = alice()
+      const rateLimitRef = doc(db, 'reportRateLimits', 'citizen-alice')
+
+      await assertFails(
+        setDoc(doc(db, 'issues', 'alice-without-limiter'), makeClientIssue())
+      )
+
+      await assertSucceeds(
+        submitClientComplaint(db, 'citizen-alice', 'alice-first-rate-limited', makeClientIssue())
+      )
+
+      await assertFails(
+        runTransaction(db, async (transaction) => {
+          await transaction.get(rateLimitRef)
+          transaction.set(rateLimitRef, { lastSubmittedAt: serverTimestamp() })
+          transaction.set(
+            doc(db, 'issues', 'alice-second-rate-limited'),
+            makeClientIssue({ complaintId: 'CMP-2026-0009' })
+          )
+        })
+      )
+
+      await assertFails(
+        setDoc(doc(db, 'reportRateLimits', 'citizen-bob'), {
+          lastSubmittedAt: serverTimestamp(),
+        })
+      )
+    })
+
     it('allows a citizen to report a clean Pending complaint', async () => {
       await assertSucceeds(
-        setDoc(doc(alice(), 'issues', 'alice-new-issue'), makeClientIssue({
+        submitClientComplaint(alice(), 'citizen-alice', 'alice-new-issue', makeClientIssue({
           complaintId: 'CMP-2026-0007',
           title: 'Pothole on 5th street',
           description: 'Large pothole in right lane.',
@@ -413,7 +454,7 @@ describe('Firestore Security Rules (Issue #20 Hardening)', () => {
     // Issue #251: Jurisdiction-Aware Routing & Ward Detection Compatibility
     it('allows a citizen to report a complaint with valid jurisdiction metadata (Issue #251)', async () => {
       await assertSucceeds(
-        setDoc(doc(alice(), 'issues', 'alice-ward-issue'), makeClientIssue({
+        submitClientComplaint(alice(), 'citizen-alice', 'alice-ward-issue', makeClientIssue({
           complaintId: 'CMP-2026-0008',
           title: 'Streetlight failure in Connaught Place',
           description: 'Dark junction near block B.',
@@ -431,31 +472,31 @@ describe('Firestore Security Rules (Issue #20 Hardening)', () => {
       const db = alice()
       // wardId must be string
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-bad-wardid'), makeClientIssue({
+        submitClientComplaint(db, 'citizen-alice', 'alice-bad-wardid', makeClientIssue({
           wardId: 12345,
         }))
       )
       // wardName must be string
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-bad-wardname'), makeClientIssue({
+        submitClientComplaint(db, 'citizen-alice', 'alice-bad-wardname', makeClientIssue({
           wardName: ['Invalid', 'Array'],
         }))
       )
       // zoneName must be string
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-bad-zonename'), makeClientIssue({
+        submitClientComplaint(db, 'citizen-alice', 'alice-bad-zonename', makeClientIssue({
           zoneName: { nested: 'Zone' },
         }))
       )
       // wardId exceeding max length (50 chars)
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-long-wardid'), makeClientIssue({
+        submitClientComplaint(db, 'citizen-alice', 'alice-long-wardid', makeClientIssue({
           wardId: 'W'.repeat(51),
         }))
       )
       // Unexpected arbitrary object field like raw jurisdictionMeta must be rejected
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-jurisdiction-meta'), makeClientIssue({
+        submitClientComplaint(db, 'citizen-alice', 'alice-jurisdiction-meta', makeClientIssue({
           jurisdictionMeta: { fake: 'data' },
         }))
       )
@@ -464,44 +505,44 @@ describe('Firestore Security Rules (Issue #20 Hardening)', () => {
     it('allows complaint creation without a tracking ID (allocated later)', async () => {
       const payload = makeClientIssue({ complaintId: undefined })
       delete payload.complaintId
-      await assertSucceeds(setDoc(doc(alice(), 'issues', 'alice-no-id'), payload))
+      await assertSucceeds(submitClientComplaint(alice(), 'citizen-alice', 'alice-no-id', payload))
     })
 
     it('DENIES non-Pending creation, spoofed reporters and protected workflow fields', async () => {
       const db = alice()
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-invalid-status'), makeClientIssue({ status: 'Resolved' }))
+        submitClientComplaint(db, 'citizen-alice', 'alice-invalid-status', makeClientIssue({ status: 'Resolved' }))
       )
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-spoofed'), makeClientIssue({ reportedBy: 'citizen-bob' }))
+        submitClientComplaint(db, 'citizen-alice', 'alice-spoofed', makeClientIssue({ reportedBy: 'citizen-bob' }))
       )
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-department'), makeClientIssue({
+        submitClientComplaint(db, 'citizen-alice', 'alice-department', makeClientIssue({
           department: 'Hacked Department',
         }))
       )
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-resolved-at'), makeClientIssue({
+        submitClientComplaint(db, 'citizen-alice', 'alice-resolved-at', makeClientIssue({
           resolvedAt: serverTimestamp(),
         }))
       )
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-feedback'), makeClientIssue({
+        submitClientComplaint(db, 'citizen-alice', 'alice-feedback', makeClientIssue({
           feedback: { rating: 5 },
         }))
       )
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-worker'), makeClientIssue({
+        submitClientComplaint(db, 'citizen-alice', 'alice-worker', makeClientIssue({
           assignedWorker: { name: 'Fake' },
         }))
       )
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-bad-id'), makeClientIssue({
+        submitClientComplaint(db, 'citizen-alice', 'alice-bad-id', makeClientIssue({
           complaintId: 'ADMIN-0001',
         }))
       )
       await assertFails(
-        setDoc(doc(db, 'issues', 'alice-forged-endorsements'), makeClientIssue({
+        submitClientComplaint(db, 'citizen-alice', 'alice-forged-endorsements', makeClientIssue({
           endorsedBy: ['citizen-bob'],
           endorsementCount: 1,
         }))
@@ -1189,7 +1230,10 @@ describe('Firestore Security Rules (Issue #20 Hardening)', () => {
 
       await assertSucceeds(
         runTransaction(db, async (tx) => {
+          const rateLimitRef = doc(db, 'reportRateLimits', 'citizen-alice')
+          await tx.get(rateLimitRef)
           tx.set(issueRef, makeClientIssue({ complaintId: 'CMP-2026-0008' }))
+          tx.set(rateLimitRef, { lastSubmittedAt: serverTimestamp() })
           tx.set(receiptRef, { createdAt: serverTimestamp() })
         })
       )
