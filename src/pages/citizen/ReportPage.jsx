@@ -8,9 +8,10 @@ import {
   Loader2, Clock, Camera, Trash2,
 } from 'lucide-react'
 import {
-  collection, doc, runTransaction, serverTimestamp, query, where, getDocs,
+  collection, doc, getDocFromServer, runTransaction, serverTimestamp, query, where, getDocs,
 } from 'firebase/firestore'
-import { db } from '@/firebase/services'
+import { db, ensureAppCheckToken } from '@/firebase/services'
+import { assertReportCooldownElapsed, writeReportRateLimit } from '@/firebase/reportRateLimit'
 import { endorseComplaint } from '@/firebase/endorseComplaint'
 import { allocateComplaintId, getDisplayId } from '@/firebase/complaintId'
 import { addNotificationToBatch } from '@/firebase/notifications'
@@ -579,6 +580,15 @@ export function ReportPage() {
         return
       }
 
+      // Attest the client before uploading evidence or writing a report.
+      await ensureAppCheckToken()
+
+      const rateLimitRef = doc(db, 'reportRateLimits', user.uid)
+      const existingRateLimit = await getDocFromServer(rateLimitRef)
+      assertReportCooldownElapsed(
+        existingRateLimit.exists() ? existingRateLimit.data()?.lastSubmittedAt : null
+      )
+
       const issueRef = doc(collection(db, 'issues'))
       const attachmentId = issueRef.id
       const uploadedArtifacts = []
@@ -639,7 +649,13 @@ export function ReportPage() {
       let complaintId = null
       try {
         await runTransaction(db, async (transaction) => {
+          // Re-check inside the transaction; rules serialize competing submissions.
+          const currentRateLimit = await transaction.get(rateLimitRef)
+          assertReportCooldownElapsed(
+            currentRateLimit.exists() ? currentRateLimit.data()?.lastSubmittedAt : null
+          )
           complaintId = await allocateComplaintId(transaction)
+          writeReportRateLimit(transaction, rateLimitRef)
 
           const issuePayload = {
             complaintId,
