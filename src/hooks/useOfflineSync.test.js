@@ -17,7 +17,7 @@ const runtime = vi.hoisted(() => ({
 }))
 vi.mock('react', () => ({ useCallback: callback => callback, useEffect() {}, useRef: current => ({ current }) }))
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: runtime.auth.currentUser }) }))
-vi.mock('@/firebase/services', () => ({ db: {}, auth: runtime.auth }))
+vi.mock('@/firebase/services', () => ({ db: {}, auth: runtime.auth, ensureAppCheckToken: vi.fn(async () => null) }))
 vi.mock('@/firebase/storage', () => ({
   uploadComplaintPhoto: vi.fn(async (file, id) => {
     runtime.uploadCalls.push({ file, id })
