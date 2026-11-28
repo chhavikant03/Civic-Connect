@@ -42,6 +42,43 @@ service cloud.firestore {
       return value == null || value is map;
     }
 
+    // Reports and their per-citizen limiter must commit atomically. request.time
+    // makes the server-side cooldown authoritative; localStorage is UX only.
+    function reportCooldownElapsed(rateLimitPath) {
+      return !exists(rateLimitPath) ||
+        (
+          get(rateLimitPath).data.get('lastSubmittedAt', null) is timestamp &&
+          get(rateLimitPath).data.lastSubmittedAt + duration.value(60, 's') <= request.time
+        );
+    }
+
+    function hasValidReportRateLimit() {
+      let rateLimitPath = /databases/$(database)/documents/reportRateLimits/$(request.auth.uid);
+      return existsAfter(rateLimitPath) &&
+             getAfter(rateLimitPath).data.keys().hasOnly(['lastSubmittedAt']) &&
+             getAfter(rateLimitPath).data.get('lastSubmittedAt', null) == request.time &&
+             reportCooldownElapsed(rateLimitPath);
+    }
+
+    // Per-citizen report submission limiter (/reportRateLimits/{userId})
+    match /reportRateLimits/{userId} {
+      function isOwner() {
+        return isAuthenticated() && request.auth.uid == userId;
+      }
+
+      allow get: if isOwner();
+      allow list: if false;
+      allow create: if isOwner() &&
+                    request.resource.data.keys().hasOnly(['lastSubmittedAt']) &&
+                    request.resource.data.get('lastSubmittedAt', null) == request.time;
+      allow update: if isOwner() &&
+                    resource.data.get('lastSubmittedAt', null) is timestamp &&
+                    resource.data.lastSubmittedAt + duration.value(60, 's') <= request.time &&
+                    request.resource.data.keys().hasOnly(['lastSubmittedAt']) &&
+                    request.resource.data.get('lastSubmittedAt', null) == request.time;
+      allow delete: if false;
+    }
+
     // ---------------------------------------------------------------------
     // User profiles (/users/{userId})
     // ---------------------------------------------------------------------
@@ -131,7 +168,8 @@ service cloud.firestore {
         ];
         // Workflow, assignment, audit and social fields may only be produced by
         // server-side/admin workflows. A reporter starts from a clean Pending doc.
-        return data.keys().hasOnly(allowedFields) &&
+        return hasValidReportRateLimit() &&
+               data.keys().hasOnly(allowedFields) &&
                data.keys().hasAll(['title', 'description', 'category', 'status', 'reportedBy', 'createdAt', 'updatedAt']) &&
                data.reportedBy == request.auth.uid &&
                data.status == 'Pending' &&
