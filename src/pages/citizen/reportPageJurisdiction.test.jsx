@@ -73,6 +73,7 @@ vi.mock('@/components/common/ComplaintLocationMap', () => ({
 
 vi.mock('@/firebase/services', () => ({
   db: {},
+  ensureAppCheckToken: vi.fn(async () => null),
 }))
 
 vi.mock('firebase/firestore', () => ({
@@ -83,6 +84,7 @@ vi.mock('firebase/firestore', () => ({
   query: vi.fn(),
   where: vi.fn(),
   getDocs: vi.fn(async () => ({ docs: [], forEach: vi.fn() })),
+  getDocFromServer: vi.fn(async () => ({ exists: () => false, data: () => ({}) })),
 }))
 
 vi.mock('@/firebase/complaintId', () => ({
