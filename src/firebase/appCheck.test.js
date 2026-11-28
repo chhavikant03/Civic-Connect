@@ -45,7 +45,7 @@ describe('Firebase App Check', () => {
 
   it('uses a deterministic CustomProvider token in tests', async () => {
     const sdk = createSdk()
-    const env = { MODE: 'test', PROD: false }
+    const env = { MODE: 'test', PROD: false, VITE_APPCHECK_USE_CUSTOM_PROVIDER: 'true' }
     const appCheck = createAppCheck({ name: 'test-app' }, env, sdk)
     const tokenResult = await appCheck.options.provider.options.getToken()
 
