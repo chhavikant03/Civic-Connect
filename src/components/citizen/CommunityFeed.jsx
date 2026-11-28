@@ -10,6 +10,7 @@ import {
   limit,
 } from 'firebase/firestore'
 import { db } from '@/firebase/services'
+import { sortTrendingIssues } from '@/utils/trendingScore'
 import {
   createCommentSubscriptionManager,
   postIssueComment,
@@ -242,23 +243,26 @@ export default function CommunityFeed() {
   ]
 
   // Filtering & Sorting
-  const filteredComplaints = complaints
-    .filter((item) => {
-      if (categoryFilter === 'all') return true
-      return item.category?.toLowerCase() === categoryFilter.toLowerCase()
-    })
-    .sort((a, b) => {
-      if (sortBy === 'upvoted') {
-        const countA = a.upvotesCount || (a.upvotedBy?.length || 0)
-        const countB = b.upvotesCount || (b.upvotedBy?.length || 0)
-        return countB - countA
-      }
+  const categoryFilteredComplaints = complaints.filter((item) => {
+    if (categoryFilter === 'all') return true
+    return item.category?.toLowerCase() === categoryFilter.toLowerCase()
+  })
 
-      const timeA = a.createdAt?.seconds || 0
-      const timeB = b.createdAt?.seconds || 0
+  const filteredComplaints =
+    sortBy === 'trending'
+      ? sortTrendingIssues(categoryFilteredComplaints)
+      : categoryFilteredComplaints.slice().sort((a, b) => {
+          if (sortBy === 'upvoted') {
+            const countA = a.upvotesCount || (a.upvotedBy?.length || 0)
+            const countB = b.upvotesCount || (b.upvotedBy?.length || 0)
+            return countB - countA
+          }
 
-      return timeB - timeA
-    })
+          const timeA = a.createdAt?.seconds || 0
+          const timeB = b.createdAt?.seconds || 0
+
+          return timeB - timeA
+        })
 
   const translatedStatuses = {
     Pending: 'statusPending',
@@ -326,6 +330,17 @@ export default function CommunityFeed() {
               }`}
             >
               {t('mostUpvoted')}
+            </button>
+
+            <button
+              onClick={() => setSortBy('trending')}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
+                sortBy === 'trending'
+                  ? 'bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-300'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
+              }`}
+            >
+              {t('trending')}
             </button>
           </div>
         </div>

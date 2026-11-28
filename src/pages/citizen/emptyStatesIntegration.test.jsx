@@ -4,6 +4,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
+import { fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { MyReportsPage } from './MyReportsPage'
 import { NotificationCenter } from '@/components/NotificationCenter'
@@ -62,6 +63,10 @@ vi.mock('firebase/firestore', () => ({
   }),
 }))
 
+vi.mock('@/utils/reportQueryCache', () => ({
+  getReportQueryCache: vi.fn(() => Promise.resolve(null)),
+  setReportQueryCache: vi.fn(() => Promise.resolve(undefined)),
+}))
 let container = null
 let root = null
 
@@ -193,20 +198,16 @@ describe('Empty States Integration', () => {
       // Enter search query that matches nothing
       const input = container.querySelector('input')
       await act(async () => {
-        // native input change
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-          window.HTMLInputElement.prototype,
-          'value'
-        ).set
-        nativeInputValueSetter.call(input, 'NonExistentTerm')
-        input.dispatchEvent(new Event('input', { bubbles: true }))
+        fireEvent.change(input, {
+          target: { value: 'NonExistentTerm' },
+        })
       })
 
       expect(container.textContent).toContain('No Complaints Found')
       expect(container.textContent).toContain('Try a different search term or clear your search query.')
 
       const clearBtn = Array.from(container.querySelectorAll('button')).find((b) =>
-        b.textContent.includes('Clear Search')
+        b.textContent.trim().toLowerCase().includes('clear search')
       )
       expect(clearBtn).toBeDefined()
 
