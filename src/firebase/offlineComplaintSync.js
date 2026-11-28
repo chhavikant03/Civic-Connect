@@ -2,7 +2,8 @@ import {
   collection, doc, documentId, getDocFromServer, getDocsFromServer, limit, orderBy, query,
   runTransaction, serverTimestamp, startAt, where,
 } from 'firebase/firestore'
-import { auth, db } from './services'
+import { auth, db, ensureAppCheckToken } from './services'
+import { assertReportCooldownElapsed, writeReportRateLimit } from './reportRateLimit'
 import { allocateComplaintId } from './complaintId'
 import { addComplaintEventToBatch } from './complaintEvents'
 import { addNotificationToBatch } from './notifications'
@@ -90,6 +91,8 @@ export function syncOfflineComplaint(complaint, session, options = {}) {
     let audioUpload = null
 
     try {
+      await ensureAppCheckToken()
+
       const photoFile = normalizePhotoFile(complaint)
       if (photoFile) {
         photoUpload = await uploadPhoto(photoFile, localId)
@@ -155,8 +158,15 @@ export function syncOfflineComplaint(complaint, session, options = {}) {
           return
         }
 
+        const rateLimitRef = doc(db, 'reportRateLimits', userId)
+        const rateLimit = await transaction.get(rateLimitRef)
+        assertReportCooldownElapsed(
+          rateLimit.exists() ? rateLimit.data()?.lastSubmittedAt : null
+        )
+
         const complaintId = await allocateComplaintId(transaction)
         assertCurrentSession()
+        writeReportRateLimit(transaction, rateLimitRef)
 
         // Validate and resolve jurisdiction metadata
         let resolvedWardId = null
